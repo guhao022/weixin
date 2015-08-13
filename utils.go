@@ -1,11 +1,9 @@
-package main
+package weixin
 
 import (
 	"time"
 	"crypto/rand"
 	r "math/rand"
-	"net/http"
-	"encoding/json"
 )
 
 
@@ -33,14 +31,4 @@ func RandomCreateBytes(n int, alphabets ...byte) []byte {
 		}
 	}
 	return bytes
-}
-
-func OutputJson(w http.ResponseWriter, i interface{}) {
-	out, err := json.Marshal(i)
-	if err != nil {
-		return
-	}
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("content-type", "application/json")
-	w.Write(out)
 }

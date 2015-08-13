@@ -1,4 +1,4 @@
-package main
+package weixin
 
 import (
 	"strings"
@@ -157,5 +157,5 @@ func GetJsSign(url string) *JsSign{
 	s := sha1.New()
 	io.WriteString(s, sortStr)
 	sign := fmt.Sprintf("%x", s.Sum(nil))
-	return &JsSign{AppID,noncestr, timestamp, url, sign}
+	return &JsSign{jsTick.AccessToken.AppId,noncestr, timestamp, url, sign}
 }

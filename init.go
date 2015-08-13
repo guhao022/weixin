@@ -1,4 +1,4 @@
-package main
+package weixin
 
 const (
 	Url = "https://api.weixin.qq.com/cgi-bin/"
