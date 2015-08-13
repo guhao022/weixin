@@ -13,6 +13,7 @@ const (
 )
 
 func main() {
+
 	http.HandleFunc("/ticket", ticket)
 	log.Println("监听端口 :9900...")
 	err := http.ListenAndServe(":9900", nil)
@@ -40,6 +41,8 @@ func ticket(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("====================================================================")
 	OutputJson(w, js_sign)
 }
+
+
 
 
 /*func proc(w http.ResponseWriter, r *http.Request) {

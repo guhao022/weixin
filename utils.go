@@ -40,6 +40,7 @@ func OutputJson(w http.ResponseWriter, i interface{}) {
 	if err != nil {
 		return
 	}
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.Header().Set("content-type", "application/json")
 	w.Write(out)
 }
