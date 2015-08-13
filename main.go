@@ -30,7 +30,7 @@ func ticket(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(http.StatusText(http.StatusAccepted)))
 	}
 
-	mp := New(token, appID, appsecret)
+	mp := New(token, AppID, appsecret)
 
 	t, _ := mp.AccessToken.Fresh()
 	log.Println("AccessToken:",t)
