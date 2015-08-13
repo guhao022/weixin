@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	appID = "wxce6bcf1fd09e7c3c"
+	AppID = "wxce6bcf1fd09e7c3c"
 	appsecret = "6f14e784c4e49f5504ebb8d4802c5b61"
 	token = "wordhi"
 )

@@ -134,6 +134,7 @@ func (this *JsapiTicket) locked() bool {
 }
 
 type JsSign struct {
+	AppID	  string `json:"appID"`
 	NonceStr  string `json:"nonceStr"`
 	Timetamp  int64  `json:"timestamp"`
 	Url       string `json:"url"`
@@ -156,5 +157,5 @@ func GetJsSign(url string) *JsSign{
 	s := sha1.New()
 	io.WriteString(s, sortStr)
 	sign := fmt.Sprintf("%x", s.Sum(nil))
-	return &JsSign{noncestr, timestamp, url, sign}
+	return &JsSign{AppID,noncestr, timestamp, url, sign}
 }
