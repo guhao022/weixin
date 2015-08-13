@@ -22,6 +22,7 @@ func main() {
 	}
 }
 
+var ticket_total = 0
 func ticket(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	url := r.FormValue("url")
@@ -38,8 +39,9 @@ func ticket(w http.ResponseWriter, r *http.Request) {
 	log.Println("JsSign: ", js_sign.Signature)
 	log.Println("JsSignUrl: ", js_sign.Url)
 	
-	fmt.Println("====================================================================")
+	fmt.Printf("================================%d========================================", ticket_total)
 	OutputJson(w, js_sign)
+	ticket_total++
 }
 
 
