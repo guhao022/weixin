@@ -79,8 +79,8 @@ func (this *JsapiTicket) Refresh(refresh bool) {
                 if err := this.Get(); err != nil {
                     continue
                 }
-                //time.Sleep(time.Second * time.Duration(this.ticket.ExpiresIn))
-                time.Sleep(1 * time.Second)
+                time.Sleep(time.Second * time.Duration(this.ticket.ExpiresIn))
+                //time.Sleep(1 * time.Second)
                 log.Println("Ticket: ", this.fetch())
             }
         }()
