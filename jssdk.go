@@ -2,26 +2,119 @@ package weixin
 
 import (
 	"strings"
-	"io/ioutil"
-	"os"
-	"path"
 	"errors"
 	"time"
-	"sort"
-	"strconv"
-	"fmt"
-	"crypto/sha1"
-	"io"
-	"log"
+	"sync"
+    "encoding/json"
+    "net/http"
+    "strconv"
+    "log"
+    "sort"
+    "crypto/sha1"
+    "fmt"
+    "io"
 )
 
 type JsapiTicket struct {
-	AccessToken AccessToken
-	TmpName	string
-	LckName string
+    accessToken AccessToken
+	ticket Response
+	locker sync.RWMutex
 }
 
-func (this *JsapiTicket) Fresh() (string, error) {
+func (this *JsapiTicket) fetch() string {
+    this.locker.RLock()
+    defer this.locker.RUnlock()
+
+    return this.ticket.Ticket
+}
+
+func (this *JsapiTicket) getJsApiTicket() error {
+	response := struct {
+		Code      int    `json:"errcode"`
+		Msg       string `json:"errmsg"`
+		Ticket    string `json:"ticket"`
+		ExpiresIn int64  `json:"expires_in"`
+	}{}
+    access_token, err := this.accessToken.Fresh()
+    if err != nil {
+        return err
+    }
+
+    requestUrl := strings.Join([]string{Url, "ticket/getticket?access_token=", access_token, "&type=jsapi"}, "")
+    resp, err := http.Get(requestUrl)
+    if err != nil {
+        return err
+    }
+
+	json.NewDecoder(resp.Body).Decode(&response)
+	if response.Code != 0 {
+		return errors.New(response.Msg)
+	}
+
+	this.locker.Lock()
+	defer this.locker.Unlock()
+    this.ticket.ExpiresIn = response.ExpiresIn
+    this.ticket.Ticket = response.Ticket
+	return nil
+}
+
+func (this *JsapiTicket) Get() error {
+    if err := this.getJsApiTicket(); err != nil {
+        return err
+    }
+
+    return nil
+}
+
+func (this *JsapiTicket) Refresh(refresh bool) {
+    //先获得一次,获得失败panic
+    if err := this.Get(); err != nil {
+        panic(err)
+    }
+
+    //如果开启了自动刷新，就自动刷新
+    if refresh {
+        go func() {
+            for {
+                if err := this.Get(); err != nil {
+                    continue
+                }
+                //time.Sleep(time.Second * time.Duration(this.ticket.ExpiresIn))
+                time.Sleep(1 * time.Second)
+                log.Println("Ticket: ", this.fetch())
+            }
+        }()
+    }
+}
+
+type JsSign struct {
+    AppID	  string `json:"appID"`
+    NonceStr  string `json:"nonceStr"`
+    Timetamp  int64  `json:"timestamp"`
+    Url       string `json:"url"`
+    Signature string `json:"signature"`
+}
+
+func GetJsSign(url string) *JsSign{
+    var jsTick JsapiTicket
+    jsTick.Refresh(true)
+    timestamp := time.Now().Unix()
+    noncestr := string(RandomCreateBytes(16))
+    jsapi_ticket := jsTick.fetch()
+
+    sl := []string{"timestamp=" + strconv.Itoa(int(timestamp)), "noncestr=" + noncestr,"jsapi_ticket=" + jsapi_ticket, "url=" + url}
+    sort.Strings(sl)
+    sortStr := strings.Join(sl, "&")
+
+    log.Println("sortStr: ", sortStr)
+
+    s := sha1.New()
+    io.WriteString(s, sortStr)
+    sign := fmt.Sprintf("%x", s.Sum(nil))
+    return &JsSign{jsTick.accessToken.AppId,noncestr, timestamp, url, sign}
+}
+
+/*func (this *JsapiTicket) Fresh() (string, error) {
 	if this.TmpName == "" {
 		this.TmpName = "ticket.tmp"
 	}
@@ -158,4 +251,4 @@ func GetJsSign(url string) *JsSign{
 	io.WriteString(s, sortStr)
 	sign := fmt.Sprintf("%x", s.Sum(nil))
 	return &JsSign{jsTick.AccessToken.AppId,noncestr, timestamp, url, sign}
-}
+}*/
