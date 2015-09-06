@@ -7,7 +7,6 @@ const (
 type Weixin struct {
 	Request     Request
 	AccessToken AccessToken
-	JsapiTicket JsapiTicket
 }
 
 func New(token, appId, appSecret string) *Weixin {

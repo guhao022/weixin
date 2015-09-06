@@ -1,10 +1,10 @@
 package weixin
 
 import (
-	"strings"
-	"errors"
-	"time"
-	"sync"
+    "strings"
+    "errors"
+    "time"
+    "sync"
     "encoding/json"
     "net/http"
     "strconv"
@@ -17,8 +17,8 @@ import (
 
 type JsapiTicket struct {
     accessToken AccessToken
-	ticket Response
-	locker sync.RWMutex
+    ticket Response
+    locker sync.RWMutex
 }
 
 func (this *JsapiTicket) fetch() string {
@@ -29,12 +29,12 @@ func (this *JsapiTicket) fetch() string {
 }
 
 func (this *JsapiTicket) getJsApiTicket() error {
-	response := struct {
-		Code      int    `json:"errcode"`
-		Msg       string `json:"errmsg"`
-		Ticket    string `json:"ticket"`
-		ExpiresIn int64  `json:"expires_in"`
-	}{}
+    response := struct {
+        Code      int    `json:"errcode"`
+        Msg       string `json:"errmsg"`
+        Ticket    string `json:"ticket"`
+        ExpiresIn int64  `json:"expires_in"`
+    }{}
     access_token, err := this.accessToken.Fresh()
     if err != nil {
         return err
@@ -46,16 +46,16 @@ func (this *JsapiTicket) getJsApiTicket() error {
         return err
     }
 
-	json.NewDecoder(resp.Body).Decode(&response)
-	if response.Code != 0 {
-		return errors.New(response.Msg)
-	}
+    json.NewDecoder(resp.Body).Decode(&response)
+    if response.Code != 0 {
+        return errors.New(response.Msg)
+    }
 
-	this.locker.Lock()
-	defer this.locker.Unlock()
+    this.locker.Lock()
+    defer this.locker.Unlock()
     this.ticket.ExpiresIn = response.ExpiresIn
     this.ticket.Ticket = response.Ticket
-	return nil
+    return nil
 }
 
 func (this *JsapiTicket) Get() error {
@@ -95,8 +95,9 @@ type JsSign struct {
     Signature string `json:"signature"`
 }
 
-func GetJsSign(url string) *JsSign{
+func GetJsSign(url, token, appId, appSecret string) *JsSign{
     var jsTick JsapiTicket
+    jsTick.accessToken = AccessToken{AppId: appId, AppSecret: appSecret}
     jsTick.Refresh(true)
     timestamp := time.Now().Unix()
     noncestr := string(RandomCreateBytes(16))
@@ -106,7 +107,7 @@ func GetJsSign(url string) *JsSign{
     sort.Strings(sl)
     sortStr := strings.Join(sl, "&")
 
-    log.Println("sortStr: ", sortStr)
+    log.Println("appid: ", jsTick.accessToken.AppId)
 
     s := sha1.New()
     io.WriteString(s, sortStr)
