@@ -68,9 +68,9 @@ func (this *JsapiTicket) Get() error {
 
 func (this *JsapiTicket) Refresh(refresh bool) {
     //先获得一次,获得失败panic
-    if err := this.Get(); err != nil {
+    /*if err := this.Get(); err != nil {
         panic(err)
-    }
+    }*/
 
     //如果开启了自动刷新，就自动刷新
     if refresh {
@@ -79,7 +79,7 @@ func (this *JsapiTicket) Refresh(refresh bool) {
                 if err := this.Get(); err != nil {
                     continue
                 }
-                time.Sleep(time.Second * 7200)
+                time.Sleep(time.Second * 7100)
                 //time.Sleep(1 * time.Second)
                 log.Println("Ticket: ", this.fetch())
             }
