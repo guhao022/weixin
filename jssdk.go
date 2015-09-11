@@ -79,7 +79,7 @@ func (this *JsapiTicket) Refresh(refresh bool) {
                 if err := this.Get(); err != nil {
                     continue
                 }
-                time.Sleep(time.Second * time.Duration(2 * time.Hour))
+                time.Sleep(time.Second * 7200)
                 //time.Sleep(1 * time.Second)
                 log.Println("Ticket: ", this.fetch())
             }
