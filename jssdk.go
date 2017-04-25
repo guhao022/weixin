@@ -1,118 +1,118 @@
 package weixin
 
 import (
-    "strings"
-    "errors"
-    "time"
-    "sync"
-    "encoding/json"
-    "net/http"
-    "strconv"
-    "log"
-    "sort"
-    "crypto/sha1"
-    "fmt"
-    "io"
+	"crypto/sha1"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log"
+	"net/http"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
 type JsapiTicket struct {
-    accessToken AccessToken
-    ticket Response
-    locker sync.RWMutex
+	accessToken AccessToken
+	ticket      Response
+	locker      sync.RWMutex
 }
 
 func (this *JsapiTicket) fetch() string {
-    this.locker.RLock()
-    defer this.locker.RUnlock()
+	this.locker.RLock()
+	defer this.locker.RUnlock()
 
-    return this.ticket.Ticket
+	return this.ticket.Ticket
 }
 
 func (this *JsapiTicket) getJsApiTicket() error {
-    response := struct {
-        Code      int    `json:"errcode"`
-        Msg       string `json:"errmsg"`
-        Ticket    string `json:"ticket"`
-        ExpiresIn int64  `json:"expires_in"`
-    }{}
-    access_token, err := this.accessToken.Fresh()
-    if err != nil {
-        return err
-    }
+	response := struct {
+		Code      int    `json:"errcode"`
+		Msg       string `json:"errmsg"`
+		Ticket    string `json:"ticket"`
+		ExpiresIn int64  `json:"expires_in"`
+	}{}
+	access_token, err := this.accessToken.Fresh()
+	if err != nil {
+		return err
+	}
 
-    requestUrl := strings.Join([]string{Url, "ticket/getticket?access_token=", access_token, "&type=jsapi"}, "")
-    resp, err := http.Get(requestUrl)
-    if err != nil {
-        return err
-    }
+	requestUrl := strings.Join([]string{Url, "ticket/getticket?access_token=", access_token, "&type=jsapi"}, "")
+	resp, err := http.Get(requestUrl)
+	if err != nil {
+		return err
+	}
 
-    json.NewDecoder(resp.Body).Decode(&response)
-    if response.Code != 0 {
-        return errors.New(response.Msg)
-    }
+	json.NewDecoder(resp.Body).Decode(&response)
+	if response.Code != 0 {
+		return errors.New(response.Msg)
+	}
 
-    this.locker.Lock()
-    defer this.locker.Unlock()
-    this.ticket.ExpiresIn = response.ExpiresIn
-    this.ticket.Ticket = response.Ticket
-    return nil
+	this.locker.Lock()
+	defer this.locker.Unlock()
+	this.ticket.ExpiresIn = response.ExpiresIn
+	this.ticket.Ticket = response.Ticket
+	return nil
 }
 
 func (this *JsapiTicket) Get() error {
-    if err := this.getJsApiTicket(); err != nil {
-        return err
-    }
+	if err := this.getJsApiTicket(); err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 func (this *JsapiTicket) Refresh(refresh bool) {
-    //先获得一次,获得失败panic
-    /*if err := this.Get(); err != nil {
-        panic(err)
-    }*/
+	//先获得一次,获得失败panic
+	/*if err := this.Get(); err != nil {
+	    panic(err)
+	}*/
 
-    //如果开启了自动刷新，就自动刷新
-    if refresh {
-        go func() {
-            for {
-                if err := this.Get(); err != nil {
-                    continue
-                }
-                time.Sleep(time.Second * 7100)
-                //time.Sleep(1 * time.Second)
-                log.Println("Ticket: ", this.fetch())
-            }
-        }()
-    }
+	//如果开启了自动刷新，就会自动刷新
+	if refresh {
+		go func() {
+			for {
+				if err := this.Get(); err != nil {
+					continue
+				}
+				time.Sleep(time.Second * 7100)
+				//time.Sleep(1 * time.Second)
+				log.Println("Ticket: ", this.fetch())
+			}
+		}()
+	}
 }
 
 type JsSign struct {
-    AppID	  string `json:"appID"`
-    NonceStr  string `json:"nonceStr"`
-    Timetamp  int64  `json:"timestamp"`
-    Url       string `json:"url"`
-    Signature string `json:"signature"`
+	AppID     string `json:"appID"`
+	NonceStr  string `json:"nonceStr"`
+	Timetamp  int64  `json:"timestamp"`
+	Url       string `json:"url"`
+	Signature string `json:"signature"`
 }
 
-func GetJsSign(url, token, appId, appSecret string) *JsSign{
-    var jsTick JsapiTicket
-    jsTick.accessToken = AccessToken{AppId: appId, AppSecret: appSecret}
-    jsTick.Refresh(true)
-    timestamp := time.Now().Unix()
-    noncestr := string(RandomCreateBytes(16))
-    jsapi_ticket := jsTick.fetch()
+func GetJsSign(url, token, appId, appSecret string) *JsSign {
+	var jsTick JsapiTicket
+	jsTick.accessToken = AccessToken{AppId: appId, AppSecret: appSecret}
+	jsTick.Refresh(true)
+	timestamp := time.Now().Unix()
+	noncestr := string(RandomCreateBytes(16))
+	jsapi_ticket := jsTick.fetch()
 
-    sl := []string{"timestamp=" + strconv.Itoa(int(timestamp)), "noncestr=" + noncestr,"jsapi_ticket=" + jsapi_ticket, "url=" + url}
-    sort.Strings(sl)
-    sortStr := strings.Join(sl, "&")
+	sl := []string{"timestamp=" + strconv.Itoa(int(timestamp)), "noncestr=" + noncestr, "jsapi_ticket=" + jsapi_ticket, "url=" + url}
+	sort.Strings(sl)
+	sortStr := strings.Join(sl, "&")
 
-    log.Println("appid: ", jsTick.accessToken.AppId)
+	log.Println("appid: ", jsTick.accessToken.AppId)
 
-    s := sha1.New()
-    io.WriteString(s, sortStr)
-    sign := fmt.Sprintf("%x", s.Sum(nil))
-    return &JsSign{jsTick.accessToken.AppId,noncestr, timestamp, url, sign}
+	s := sha1.New()
+	io.WriteString(s, sortStr)
+	sign := fmt.Sprintf("%x", s.Sum(nil))
+	return &JsSign{jsTick.accessToken.AppId, noncestr, timestamp, url, sign}
 }
 
 /*func (this *JsapiTicket) Fresh() (string, error) {

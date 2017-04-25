@@ -1,11 +1,11 @@
 package weixin
 
 import (
-	"strings"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path"
-	"errors"
+	"strings"
 	"time"
 )
 
@@ -16,7 +16,7 @@ type AccessToken struct {
 	LckName   string
 }
 
-func (this *AccessToken) Fresh() (string, error){
+func (this *AccessToken) Fresh() (string, error) {
 	if this.TmpName == "" {
 		this.TmpName = "accesstoken.tmp"
 	}
@@ -123,4 +123,3 @@ func (this *AccessToken) locked() bool {
 	_, err := os.Stat(this.LckName)
 	return !os.IsNotExist(err)
 }
-

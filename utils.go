@@ -1,11 +1,10 @@
 package weixin
 
 import (
-	"time"
 	"crypto/rand"
 	r "math/rand"
+	"time"
 )
-
 
 func RandomCreateBytes(n int, alphabets ...byte) []byte {
 	const alphanum = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
